@@ -32,8 +32,28 @@ cp "$ROOT/engine/mcp_entry.lua" "$FORK/src/mcp_entry.lua"
 echo ">> Pulling the headless Docker image ..."
 docker pull "$DOCKER_IMAGE"
 
-echo ">> Installing Python deps ..."
-python -m pip install -r "$ROOT/server/requirements.txt"
+# Install Python deps into a dedicated virtualenv. This sidesteps two common
+# breakages on modern Linux: a system `python` without pip ("No module named
+# pip") and PEP 668 "externally-managed-environment" errors. venv brings its
+# own pip via ensurepip.
+PY="$(command -v python3 || command -v python || true)"
+[ -n "$PY" ] || { echo "ERROR: python3 not found in PATH"; exit 1; }
+
+if [ ! -d "$ROOT/.venv" ]; then
+  echo ">> Creating virtualenv (.venv) ..."
+  "$PY" -m venv "$ROOT/.venv" || {
+    echo "ERROR: could not create the virtualenv."
+    echo "       On Debian/Ubuntu install it first:  sudo apt install python3-venv"
+    exit 1
+  }
+fi
+
+VENV_PY="$ROOT/.venv/bin/python"
+echo ">> Installing Python deps into .venv ..."
+"$VENV_PY" -m pip install --upgrade pip >/dev/null
+"$VENV_PY" -m pip install -r "$ROOT/server/requirements.txt"
 
 echo
-echo "Done. Configure your MCP client (see README) and you're ready."
+echo "Done. Point your MCP client at the venv Python:"
+echo "    $VENV_PY -m pob_mcp.server   (PYTHONPATH=$ROOT/server)"
+echo "See README / .mcp.json.example. Then restart the client."

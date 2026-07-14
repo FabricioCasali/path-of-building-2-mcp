@@ -49,8 +49,12 @@ cd poe2-pob-mcp
 
 `setup` clones the Path of Building 2 fork **at a pinned commit** into `fork/`
 (it is *not* vendored in this repo — see *Licensing*), injects the headless
-entrypoint `engine/mcp_entry.lua`, pulls the Docker image, and installs the
-Python deps.
+entrypoint `engine/mcp_entry.lua`, pulls the Docker image, and creates a Python
+virtualenv in `.venv/` with the deps installed. The venv avoids the common
+"No module named pip" / PEP 668 breakages on modern Linux.
+
+> On Debian/Ubuntu, creating a venv needs the `python3-venv` package:
+> `sudo apt install python3-venv` (setup prints this if it's missing).
 
 ## Configure your MCP client
 
@@ -58,7 +62,8 @@ Copy the example config and set the absolute path to where you cloned the repo:
 
 ```bash
 cp .mcp.json.example .mcp.json
-# edit .mcp.json: replace <ABSOLUTE_PATH_TO_REPO> with your clone path
+# edit .mcp.json: replace <ABSOLUTE_PATH_TO_REPO> with your clone path.
+# Windows: use .venv/Scripts/python.exe instead of .venv/bin/python
 ```
 
 Then restart the client and confirm the server is up (in Claude Code: `/mcp`).

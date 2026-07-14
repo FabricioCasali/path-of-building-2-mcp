@@ -35,8 +35,24 @@ Copy-Item (Join-Path $Root "engine\mcp_entry.lua") (Join-Path $Fork "src\mcp_ent
 Write-Host ">> Pulling the headless Docker image ..."
 docker pull $DockerImage
 
-Write-Host ">> Installing Python deps ..."
-python -m pip install -r (Join-Path $Root "server\requirements.txt")
+# Install Python deps into a dedicated virtualenv, so we don't depend on the
+# system Python having a working pip.
+$Py = Get-Command python3 -ErrorAction SilentlyContinue
+if (-not $Py) { $Py = Get-Command python -ErrorAction SilentlyContinue }
+if (-not $Py) { throw "python not found in PATH" }
+
+$VenvDir = Join-Path $Root ".venv"
+if (-not (Test-Path $VenvDir)) {
+    Write-Host ">> Creating virtualenv (.venv) ..."
+    & $Py.Source -m venv $VenvDir
+}
+
+$VenvPy = Join-Path $VenvDir "Scripts\python.exe"
+Write-Host ">> Installing Python deps into .venv ..."
+& $VenvPy -m pip install --upgrade pip | Out-Null
+& $VenvPy -m pip install -r (Join-Path $Root "server\requirements.txt")
 
 Write-Host ""
-Write-Host "Done. Configure your MCP client (see README) and you're ready."
+Write-Host "Done. Point your MCP client at the venv Python:"
+Write-Host "    $VenvPy -m pob_mcp.server   (PYTHONPATH=$Root\server)"
+Write-Host "See README / .mcp.json.example. Then restart the client."

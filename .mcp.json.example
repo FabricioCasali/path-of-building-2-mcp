@@ -1,9 +1,10 @@
 {
-  "//": "Copy this to .mcp.json and replace <ABSOLUTE_PATH_TO_REPO> with the",
-  "//2": "full path where you cloned this repository. Then restart your MCP client.",
+  "//": "Copy this to .mcp.json and replace <ABSOLUTE_PATH_TO_REPO> with the full",
+  "//2": "path where you cloned this repo. `command` points at the venv created by",
+  "//3": "setup. On Windows use .venv/Scripts/python.exe instead of .venv/bin/python.",
   "mcpServers": {
     "path-of-building-2": {
-      "command": "python",
+      "command": "<ABSOLUTE_PATH_TO_REPO>/.venv/bin/python",
       "args": ["-m", "pob_mcp.server"],
       "env": {
         "PYTHONPATH": "<ABSOLUTE_PATH_TO_REPO>/server"
