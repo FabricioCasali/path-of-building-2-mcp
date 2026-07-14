@@ -1,0 +1,6 @@
+# Normalize line endings. Shell scripts MUST stay LF or they break on Linux
+# (bash chokes on the \r: "bad interpreter").
+* text=auto eol=lf
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.png binary
