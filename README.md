@@ -27,6 +27,31 @@ AI assistant  ⇄  MCP server (Python)  ⇄  mcp_entry.lua (LuaJIT, headless)  �
 | `optimize_supports(group?)` | Rank the best support-gem swaps for a skill by DPS gain |
 | `optimize_runes(slot)` | Rank every valid rune in a socket by DPS gain |
 | `compare_builds(a, b)` | Two builds side by side |
+| `poe_login_start` / `poe_login_finish` | Log in to your pathofexile.com account (OAuth) |
+| `list_characters` / `import_character(name)` | Import a **live** character straight from your account |
+
+### Live character import (account login)
+
+Instead of exporting to a share code, you can pull a character straight off your
+account:
+
+```
+> poe_login_start           # returns a URL — open it and approve
+> poe_login_finish          # completes the login
+> list_characters           # see your PoE2 characters
+> import this character: MyWitchhunter
+```
+
+This uses the same OAuth (Authorization Code + PKCE) flow Path of Building
+itself uses: the browser is sent to `pathofexile.com/oauth/authorize` and
+redirected to a local listener that catches the login. Nothing is scraped and
+no password touches this tool.
+
+> **Caveat:** it reuses Path of Building's registered OAuth client
+> (`client_id=pob`) so the localhost redirect is accepted without registering a
+> new app. Treat it as driving the same PoB integration. Tokens live in memory
+> for the server's lifetime only (no on-disk persistence). If you don't need
+> live import, the `pobb.in` link flow above needs no login at all.
 
 ## Requirements
 

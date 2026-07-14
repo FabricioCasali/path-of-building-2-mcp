@@ -231,6 +231,52 @@ function handlers.import_build(req)
 	return summary()
 end
 
+-- {cmd="import_character", json="<raw body of the PoE character API>"}
+-- Build from a live character fetched off pathofexile.com. The Python server
+-- does the (authenticated) HTTP; here we just decode the JSON and reuse PoB's
+-- own importer (same path as HeadlessWrapper.loadBuildFromJSON). The PoE2
+-- character endpoint returns equipment + passives + jewels in one object, so
+-- the same decoded table feeds both import steps.
+function handlers.import_character(req)
+	if type(req.json) ~= "string" or req.json == "" then
+		return nil, "import_character requires a non-empty 'json' string"
+	end
+	local data, _, decodeErr = dkjson.decode(req.json)
+	if decodeErr or type(data) ~= "table" then
+		return nil, "could not decode character JSON: " .. tostring(decodeErr)
+	end
+	local charData = data.character or data
+	if type(charData) ~= "table" or (charData.equipment == nil and charData.passives == nil) then
+		return nil, "character JSON has no 'equipment'/'passives' (wrong payload?)"
+	end
+
+	newBuild()
+	build.importTab:ImportPassiveTreeAndJewels(charData)
+	build.calcsTab:BuildOutput()
+	build.importTab:ImportItemsAndSkills(charData)
+	recalc()
+
+	if not build_ready() then
+		return nil, "character imported but build did not become ready"
+	end
+	local res = summary()
+	-- Hand the composed XML back so the server can remember the build (and the
+	-- caller can turn it into a share code).
+	local ok, xml = pcall(function() return build:SaveDB("code") end)
+	if ok and type(xml) == "string" then res.xml = xml end
+	return res
+end
+
+-- {cmd="export_xml"} -> the current build serialized to PoB XML.
+function handlers.export_xml()
+	if not build_ready() then return nil, "no build loaded" end
+	local ok, xml = pcall(function() return build:SaveDB("code") end)
+	if not ok or type(xml) ~= "string" then
+		return nil, "failed to serialize build XML"
+	end
+	return { xml = xml }
+end
+
 -- {cmd="calc_stats"}  -> summary + offense + pools/resists
 function handlers.calc_stats()
 	if not build_ready() then return nil, "no build loaded" end

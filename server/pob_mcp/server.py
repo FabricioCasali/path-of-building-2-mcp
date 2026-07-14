@@ -18,7 +18,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from . import optimizer
+from . import optimizer, poe_api, poe_oauth
 from .engine import PobEngine
 from .fetch import FetchError, fetch_build_source, looks_like_url, looks_like_xml
 from .share_code import ShareCodeError, decode_share_code
@@ -275,6 +275,77 @@ def optimize_runes(
     """
     build_xml = _ensure_loaded(code, xml)
     return optimizer.optimize_runes(_get_engine(), build_xml, slot=slot, rune_index=rune_index, top=top)
+
+
+# --------------------------------------------------------------------------
+# Account login + live character import (OAuth, api.pathofexile.com)
+# --------------------------------------------------------------------------
+
+@mcp.tool()
+def poe_login_start() -> dict[str, Any]:
+    """Begin logging in to your pathofexile.com account (OAuth).
+
+    Returns an ``authorize_url``. Open it in a browser and approve access; the
+    login is captured by a local listener. Then call ``poe_login_finish`` to
+    complete. (An assistant with browser automation can open the URL for you.)
+    """
+    info = poe_oauth.start_login()
+    return {
+        "authorize_url": info["authorize_url"],
+        "instructions": "Open authorize_url in a browser, approve access, then "
+                        "call poe_login_finish. The redirect is caught automatically.",
+    }
+
+
+@mcp.tool()
+def poe_login_finish(timeout: float = 180.0) -> dict[str, Any]:
+    """Finish the login started by ``poe_login_start`` (waits for the redirect).
+
+    Args:
+        timeout: Seconds to wait for you to approve in the browser.
+    """
+    try:
+        return poe_oauth.finish_login(timeout=timeout)
+    except poe_oauth.OAuthError as exc:
+        raise ValueError(str(exc)) from exc
+
+
+@mcp.tool()
+def poe_logout() -> dict[str, Any]:
+    """Forget the current account session."""
+    poe_oauth.logout()
+    return {"logged_in": False}
+
+
+@mcp.tool()
+def list_characters() -> dict[str, Any]:
+    """List the PoE2 characters on the logged-in account (name, level, class, league)."""
+    try:
+        return {"characters": poe_api.list_characters()}
+    except (poe_api.PoEApiError, poe_oauth.OAuthError) as exc:
+        raise ValueError(str(exc)) from exc
+
+
+@mcp.tool()
+def import_character(name: str) -> dict[str, Any]:
+    """Import a live character from your account and make it the active build.
+
+    Requires a login (``poe_login_start`` / ``poe_login_finish``). Fetches the
+    character off the API and hands it to the engine's native PoB importer.
+
+    Args:
+        name: Character name (see ``list_characters``).
+    """
+    global _current_xml
+    try:
+        raw = poe_api.fetch_character_raw(name)
+    except (poe_api.PoEApiError, poe_oauth.OAuthError) as exc:
+        raise ValueError(str(exc)) from exc
+    result = _get_engine().call("import_character", json=raw)
+    # The engine hands back the composed XML so later tools have a build to
+    # restore to (optimizers) and we can round-trip to a share code.
+    _current_xml = result.pop("xml", None)
+    return result
 
 
 @mcp.tool()
