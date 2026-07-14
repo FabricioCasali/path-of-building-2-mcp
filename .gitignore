@@ -1,0 +1,25 @@
+# The PoB2 fork is NOT vendored — setup.(sh|ps1) clones it at a pinned commit
+# and injects engine/mcp_entry.lua into it. See README.
+/fork/
+
+# Local MCP client config (has machine-specific absolute paths)
+/.mcp.json
+
+# Logs / scratch
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Editor / OS
+.claude/
+.DS_Store
+Thumbs.db
+
+# Stray path glitch from a bad Windows arg
+/fork;C/

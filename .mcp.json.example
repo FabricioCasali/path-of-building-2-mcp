@@ -1,0 +1,13 @@
+{
+  "//": "Copy this to .mcp.json and replace <ABSOLUTE_PATH_TO_REPO> with the",
+  "//2": "full path where you cloned this repository. Then restart your MCP client.",
+  "mcpServers": {
+    "path-of-building-2": {
+      "command": "python",
+      "args": ["-m", "pob_mcp.server"],
+      "env": {
+        "PYTHONPATH": "<ABSOLUTE_PATH_TO_REPO>/server"
+      }
+    }
+  }
+}
