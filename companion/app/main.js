@@ -43,27 +43,35 @@ function startService() {
       Companion__ClientTxtPath: CONFIG.clientTxtPath || '',
       Companion__Model: CONFIG.model || 'sonnet',
     },
-    stdio: 'inherit',
+    // windowsHide + piped stdio: no separate dotnet console window pops up.
+    // We forward the service's logs into our own stdout instead.
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
+  service.stdout.on('data', (d) => process.stdout.write(`[svc] ${d}`));
+  service.stderr.on('data', (d) => process.stderr.write(`[svc] ${d}`));
   service.on('error', (err) => console.error('[companion] falha ao iniciar serviço:', err.message));
   service.on('exit', (code) => console.log('[companion] serviço encerrou com código', code));
 }
 
 function createWindow() {
-  const { width: sw } = screen.getPrimaryDisplay().workAreaSize;
-  const winWidth = 560;
+  // Cover the whole display: the hub is a full-screen overlay (bottom dock +
+  // top context strip + a rising panel), mostly transparent so the game shows.
+  const { x, y, width, height } = screen.getPrimaryDisplay().bounds;
   win = new BrowserWindow({
-    width: winWidth,
-    height: 460,
-    x: Math.round((sw - winWidth) / 2),
-    y: 80,
+    x, y, width, height,
     show: false,
     frame: false,
     transparent: true,
     resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
     skipTaskbar: true,
     alwaysOnTop: true,
     hasShadow: false,
+    roundedCorners: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -83,7 +91,7 @@ function toggleWindow() {
   } else {
     win.show();
     win.focus();
-    win.webContents.send('focus-input');
+    win.webContents.send('shown');
   }
 }
 

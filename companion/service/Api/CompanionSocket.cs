@@ -53,6 +53,19 @@ public static class CompanionSocket
                             .ConfigureAwait(false);
                         break;
                     }
+                    case "timeline":
+                    {
+                        var entries = state.Timeline().Select(e => new { kind = e.Kind, ts = e.Ts, text = e.Text, location = e.Location });
+                        await SendAsync(socket, new { type = "timeline", entries }, ct).ConfigureAwait(false);
+                        break;
+                    }
+                    case "context":
+                    {
+                        var c = state.Context();
+                        await SendAsync(socket, new { type = "context", location = c.Location, recentDeaths = c.RecentDeaths, recentCharacters = c.RecentCharacters }, ct)
+                            .ConfigureAwait(false);
+                        break;
+                    }
                     case "ask":
                     {
                         var question = doc.RootElement.TryGetProperty("question", out var q) ? q.GetString() : null;

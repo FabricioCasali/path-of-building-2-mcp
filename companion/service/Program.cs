@@ -17,7 +17,7 @@ builder.Services.AddSingleton<GameState>(sp =>
     var promptPath = opts.SystemPromptPath;
     if (!string.IsNullOrWhiteSpace(promptPath) && File.Exists(promptPath))
         systemOverride = File.ReadAllText(promptPath).Trim();
-    return new GameState(new LoreGate(systemOverride));
+    return new GameState(new LoreGate(systemOverride), new Chronicle());
 });
 
 builder.Services.AddSingleton<ILlmProvider>(sp =>
