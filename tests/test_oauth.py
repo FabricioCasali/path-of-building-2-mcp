@@ -19,7 +19,10 @@ from pob_mcp import poe_oauth  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _reset():
+def _reset(tmp_path, monkeypatch):
+    # Redirect the on-disk token to a throwaway path so tests never touch (or
+    # wipe) a real user session at %LOCALAPPDATA%\pob2-mcp\token.json.
+    monkeypatch.setenv("POB2_MCP_TOKEN_PATH", str(tmp_path / "token.json"))
     poe_oauth.logout()
     yield
     poe_oauth.logout()

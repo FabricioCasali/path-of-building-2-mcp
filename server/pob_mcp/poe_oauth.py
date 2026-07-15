@@ -29,6 +29,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import http.server
+import json
+import os
 import secrets
 import threading
 import time
@@ -36,6 +38,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from pathlib import Path
 
 __all__ = ["start_login", "finish_login", "get_valid_token", "logout", "OAuthError"]
 
@@ -87,6 +90,56 @@ class _Token:
 _pending: _Pending | None = None
 _token: _Token | None = None
 _lock = threading.Lock()
+
+
+# --------------------------------------------------------------------------
+# On-disk token persistence
+# --------------------------------------------------------------------------
+# The token (incl. refresh token) is cached so separate processes — e.g. the
+# live-coaching daemon (advisor.py) — reuse the login instead of each needing
+# its own browser flow. Plaintext in the user's local profile, consistent with
+# how PoB2 itself stores its session; single-user machine assumption.
+
+def _token_path() -> Path:
+    # POB2_MCP_TOKEN_PATH lets tests (and alt setups) redirect the token file
+    # away from the real user profile, so a test never clobbers a live session.
+    override = os.environ.get("POB2_MCP_TOKEN_PATH")
+    if override:
+        return Path(override)
+    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    return Path(base) / "pob2-mcp" / "token.json"
+
+
+def _save_token(token: _Token) -> None:
+    try:
+        path = _token_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({
+            "access_token": token.access_token,
+            "refresh_token": token.refresh_token,
+            "expiry": token.expiry,
+        }), encoding="utf-8")
+    except OSError:
+        pass  # persistence is best-effort; in-memory token still works
+
+
+def _load_token() -> _Token | None:
+    try:
+        data = json.loads(_token_path().read_text(encoding="utf-8"))
+        return _Token(
+            access_token=data["access_token"],
+            refresh_token=data.get("refresh_token"),
+            expiry=float(data["expiry"]),
+        )
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def _clear_token_file() -> None:
+    try:
+        _token_path().unlink(missing_ok=True)
+    except OSError:
+        pass
 
 
 def _make_handler(pending: _Pending):
@@ -203,6 +256,7 @@ def finish_login(timeout: float = 180.0) -> dict:
     token = _exchange_code(res["code"], pending.verifier, pending.redirect_uri)
     with _lock:
         _token = token
+        _save_token(token)
     return {"logged_in": True, "expires_in": max(0, int(token.expiry - time.time()))}
 
 
@@ -271,9 +325,12 @@ def get_valid_token() -> str:
     global _token
     with _lock:
         if _token is None:
+            _token = _load_token()  # pick up a session persisted by another process
+        if _token is None:
             raise OAuthError("not logged in — run the login flow first")
         if _token.expiry - time.time() < 30:
             _token = _refresh(_token)
+            _save_token(_token)
         return _token.access_token
 
 
@@ -281,6 +338,7 @@ def logout() -> None:
     global _token, _pending
     with _lock:
         _token = None
+        _clear_token_file()
         if _pending is not None:
             try:
                 _pending.server.server_close()
