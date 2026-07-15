@@ -1,0 +1,14 @@
+{
+  "name": "poe-companion",
+  "version": "0.1.0",
+  "description": "PoE2 Companion overlay — spoiler-safe lore Q&A on a hotkey (MVP)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Fabricio Casali",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}

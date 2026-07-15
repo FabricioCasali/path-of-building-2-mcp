@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; connect-src ws://127.0.0.1:* http://127.0.0.1:*; style-src 'unsafe-inline'; script-src 'self';" />
+  <title>PoE2 Companion</title>
+  <style>
+    :root {
+      --bg: rgba(18, 16, 13, 0.92);
+      --edge: rgba(196, 160, 90, 0.35);
+      --gold: #c9a24b;
+      --gold-dim: #8f7a44;
+      --ink: #e8e2d4;
+      --ink-dim: #9c9484;
+      --danger: #d98a6a;
+      --field: rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: transparent; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: var(--ink);
+      display: flex;
+      justify-content: center;
+      padding: 8px;
+      user-select: none;
+    }
+    .card {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--edge);
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      backdrop-filter: blur(2px);
+    }
+    header {
+      -webkit-app-region: drag;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 13px;
+      border-bottom: 1px solid rgba(196, 160, 90, 0.18);
+    }
+    .title {
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      color: var(--gold);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .badge {
+      -webkit-app-region: no-drag;
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--ink-dim);
+      background: var(--field);
+      border: 1px solid rgba(196, 160, 90, 0.2);
+      border-radius: 999px;
+      padding: 3px 10px;
+      max-width: 60%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .badge.dot::before {
+      content: "●";
+      color: var(--gold-dim);
+      margin-right: 6px;
+      font-size: 9px;
+      vertical-align: middle;
+    }
+    .ask {
+      display: flex;
+      gap: 8px;
+      padding: 11px 13px 8px;
+    }
+    #q {
+      -webkit-app-region: no-drag;
+      flex: 1;
+      background: var(--field);
+      border: 1px solid rgba(196, 160, 90, 0.28);
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 14px;
+      padding: 9px 11px;
+      outline: none;
+      user-select: text;
+    }
+    #q:focus { border-color: var(--gold); }
+    #q::placeholder { color: var(--ink-dim); }
+    #send {
+      -webkit-app-region: no-drag;
+      background: linear-gradient(180deg, #d7b258, #a07f34);
+      color: #1a150b;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      padding: 0 15px;
+      cursor: pointer;
+    }
+    #send:disabled { opacity: 0.5; cursor: default; }
+    .answer {
+      -webkit-app-region: no-drag;
+      margin: 2px 13px 12px;
+      padding: 11px 13px;
+      background: var(--field);
+      border-radius: 8px;
+      min-height: 150px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      user-select: text;
+      color: var(--ink);
+    }
+    .answer.placeholder, .answer .hint { color: var(--ink-dim); }
+    .answer.error { color: var(--danger); }
+    .caret::after {
+      content: "▍";
+      color: var(--gold);
+      animation: blink 1s steps(2, start) infinite;
+    }
+    @keyframes blink { to { visibility: hidden; } }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 14px 10px;
+      font-size: 10.5px;
+      color: var(--ink-dim);
+    }
+    kbd {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <header>
+      <span class="title">Exile's Companion</span>
+      <span id="frontier" class="badge dot">conectando…</span>
+    </header>
+    <div class="ask">
+      <input id="q" type="text" autocomplete="off" spellcheck="false"
+             placeholder="Pergunte sobre a história, um personagem, um evento…" />
+      <button id="send">Perguntar</button>
+    </div>
+    <div id="answer" class="answer placeholder">
+      <span class="hint">As respostas ficam travadas no seu ponto de progresso — nada de spoiler além de onde você chegou.</span>
+    </div>
+    <footer>
+      <span><kbd>Enter</kbd> envia · <kbd>Esc</kbd> esconde</span>
+      <span id="chars"></span>
+    </footer>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>

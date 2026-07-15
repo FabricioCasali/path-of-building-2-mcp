@@ -1,0 +1,7 @@
+{
+  "clientTxtPath": "H:/SteamLibrary/steamapps/common/Path of Exile 2/logs/Client.txt",
+  "model": "sonnet",
+  "hotkey": "CommandOrControl+Shift+Space",
+  "serviceUrl": "http://127.0.0.1:8848",
+  "spawnService": true
+}

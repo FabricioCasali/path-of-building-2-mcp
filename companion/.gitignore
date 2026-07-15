@@ -1,0 +1,10 @@
+# .NET
+bin/
+obj/
+
+# Node / Electron
+node_modules/
+npm-debug.log*
+
+# Local overrides
+appsettings.Development.json
